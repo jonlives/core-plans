@@ -18,7 +18,7 @@ Invoke-Command -ComputerName localhost -EnableNetworkAccess {
     Write-Host "Checking for SqlServer PS module..."
     if(!(Get-Module SqlServer -ListAvailable)) {
         Write-Host "Installing SqlServer PS Module..."
-        Install-Module SqlServer -Force | Out-Null
+        Install-Module SqlServer -Force -AllowClobber | Out-Null
     }
     Write-Host "Checking for xNetworking PS module..."
     if(!(Get-Module xNetworking -ListAvailable)) {
@@ -34,6 +34,11 @@ Invoke-Command -ComputerName localhost -EnableNetworkAccess {
 
 Import-Module "{{pkgPathFor "core/dsc-core"}}/Modules/DscCore"
 Start-DscCore (Join-Path {{pkg.svc_config_path}} cluster.ps1) EnableFailover
+
+$featureState = (Get-WindowsFeature Failover-Clustering).InstallState
+if($featureState -eq "InstallPending") {
+    Restart-Computer # that's right
+}
 
 # Adding a cluster here because DSC requires us to pass
 # credentials.
